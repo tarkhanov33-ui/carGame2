@@ -18,13 +18,11 @@ object HighScoreStore {
     private const val KEY_ALL = "scores_all"
     private const val KEY_BUTTONS = "scores_buttons"
     private const val KEY_SENSORS = "scores_sensors"
-
     private fun keyFor(gameType: Int?): String = when (gameType) {
         LoginActivity.GAME_TYPE_SENSORS -> KEY_SENSORS
         LoginActivity.GAME_TYPE_BUTTONS -> KEY_BUTTONS
         else -> KEY_ALL
     }
-
     fun addScore(context: Context, entry: ScoreEntry, keepTop: Int = 10) {
         val list = load(context, entry.gameType).toMutableList()
         list.add(entry)
@@ -42,7 +40,6 @@ object HighScoreStore {
     }
 
     fun load(context: Context, gameType: Int?): List<ScoreEntry> {
-
         val sp = context.getSharedPreferences(PREF, Context.MODE_PRIVATE)
         val raw = sp.getString(keyFor(gameType), "[]") ?: "[]"
         val arr = JSONArray(raw)
@@ -92,7 +89,6 @@ object HighScoreStore {
                 save(context, gameType, list)
             }
         }
-
         run {
             val all = load(context, null).toMutableList()
             val idxAll = all.indexOfFirst { it.ts == ts }

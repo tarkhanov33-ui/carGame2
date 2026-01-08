@@ -5,53 +5,52 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.util.Log
-import kotlin.math.abs
+import android.os.SystemClock
 
-interface AccSensorCallBack {
-    fun data(x: Float, y: Float, z: Float)
+interface LaneCallback {
+    fun onLane(lane: Int)
 }
 
-class AccSensorApi(context: Context, private val accSensorCallBack: AccSensorCallBack) {
-
+class AccSensorApi(
+    context: Context,
+    private val callback: LaneCallback,
+    private val cooldownMs: Long = 120L
+) {
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
+    private var lastMoveMs: Long = 0L
 
-    private lateinit var sensorEventListener: SensorEventListener
+    private val listener = object : SensorEventListener {
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
-    init {
-        initEventListener()
-    }
+        override fun onSensorChanged(event: SensorEvent) {
+            val now = SystemClock.uptimeMillis()
+            if (now - lastMoveMs < cooldownMs) return
 
-    private fun initEventListener() {
-        sensorEventListener = object : SensorEventListener {
-            override fun onAccuracyChanged(p0: Sensor?, p1: Int) {}
-
-            override fun onSensorChanged(event: SensorEvent) {
-                val x = event.values[0]
-                val y = event.values[1]
-                val z = event.values[2]
-                accSensorCallBack.data(x, y, z)
-
-            }
-
+            val x = event.values[0]
+            val lane = laneFromAccel(x)
+            callback.onLane(lane)
+            lastMoveMs = now
         }
     }
 
     fun start() {
-        sensorManager
-            .registerListener(sensorEventListener,
-                sensor,
-                SensorManager.SENSOR_DELAY_NORMAL
-            )
+        sensorManager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_NORMAL)
     }
 
-
     fun stop() {
-        sensorManager.unregisterListener(
-            sensorEventListener,
-            sensor
-        )
+        sensorManager.unregisterListener(listener, sensor)
+    }
+
+    private fun laneFromAccel(x: Float): Int {
+        return when {
+            x > 6f  -> 4
+            x > 3f  -> 3
+            x > 1f  -> 2
+            x < -6f -> 0
+            x < -3f -> 1
+            else    -> 2
+        }
     }
 }

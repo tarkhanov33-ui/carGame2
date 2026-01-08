@@ -2,7 +2,7 @@ package com.example.cargame
 
 import kotlin.random.Random
 
-data class StepResult(
+ class StepResult(
     val hitRock: Boolean = false,
     val gotCoin: Boolean = false,
     val gameOver: Boolean = false

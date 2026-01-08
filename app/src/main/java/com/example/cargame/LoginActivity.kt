@@ -30,7 +30,6 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.login_layout)
-
         btnStart = findViewById(R.id.btnStartButton)
         btn2Buttons = findViewById(R.id.btn2Button)
         btn1Sensor = findViewById(R.id.btn1Sensor)
@@ -38,24 +37,24 @@ class LoginActivity : AppCompatActivity() {
 
         btn2Buttons.setOnClickListener {
             selectedGameType = GAME_TYPE_BUTTONS
-            Toast.makeText(this, "2 Button Mode selected", Toast.LENGTH_SHORT).show()
+            Signals.toast("2 Button Mode selected")
         }
 
         btn1Sensor.setOnClickListener {
             selectedGameType = GAME_TYPE_SENSORS
-            Toast.makeText(this, "1 Sensor Mode selected", Toast.LENGTH_SHORT).show()
+            Signals.toast("1 Sensor Mode selected")
         }
 
         btnStart.setOnClickListener {
             val name = etName.text.toString().trim()
             if (name.isEmpty()) {
-                Toast.makeText(this, "Enter your name", Toast.LENGTH_SHORT).show()
+                Signals.toast("Enter your name")
                 return@setOnClickListener
             }
 
             val gameType = selectedGameType
             if (gameType == null) {
-                Toast.makeText(this, "Choose a mode first", Toast.LENGTH_SHORT).show()
+                Signals.toast("Choose a mode first")
                 return@setOnClickListener
             }
             val b = Bundle().apply {
@@ -65,7 +64,9 @@ class LoginActivity : AppCompatActivity() {
 
             startActivity(Intent(this, GameActivity::class.java).apply {
                 putExtras(b)
-            })
+            }
+            )
+            finish()
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.login)) { v, insets ->
