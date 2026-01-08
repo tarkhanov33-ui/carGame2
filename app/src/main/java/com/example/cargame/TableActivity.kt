@@ -19,11 +19,9 @@ class TableActivity : AppCompatActivity() {
             insets
         }
 
-        val gameType = intent.getIntExtra(LoginActivity.GAME_TYPE_KEY, -1).let { if (it == -1) null else it }
-
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_scores, ScoresFragment.newInstance(gameType))
+                .replace(R.id.fragment_scores, ScoresFragment.newInstance(null)) // ✅ ALWAYS ALL
                 .replace(R.id.fragment_map, MapFragment())
                 .commit()
         }

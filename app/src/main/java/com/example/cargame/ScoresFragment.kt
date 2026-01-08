@@ -26,34 +26,50 @@ class ScoresFragment : Fragment(R.layout.table_layout) {
         }
     }
 
+    private var gameType: Int? = null
+    private var rows: Array<RowViews>? = null
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val gameType: Int? = arguments?.takeIf { it.containsKey(ARG_GAME_TYPE) }
-            ?.getInt(ARG_GAME_TYPE)
+        gameType = arguments?.takeIf { it.containsKey(ARG_GAME_TYPE) }?.getInt(ARG_GAME_TYPE)
 
-        val list = HighScoreStore.load(requireContext(), gameType)
+        rows = Array(10) { i -> RowViews(view, i + 1) }
 
-        val rows = Array(10) { i -> RowViews(view, i + 1) }
-
-        for (i in 0 until 10) {
-            val entry = list.getOrNull(i)
-            rows[i].bind(entry)
-
-            rows[i].rootRow.setOnClickListener {
-                if (entry == null) return@setOnClickListener
-                if (entry.name == "---") return@setOnClickListener
+        rows?.forEach { row ->
+            row.rootRow.setOnClickListener {
+                val e = row.current ?: return@setOnClickListener
+                if (e.name == "---") return@setOnClickListener
 
                 parentFragmentManager.setFragmentResult(
                     RESULT_KEY,
                     Bundle().apply {
-                        putString(KEY_NAME, entry.name)
-                        putInt(KEY_SCORE, entry.score)
-                        putDouble(KEY_LAT, entry.lat ?: Double.NaN)
-                        putDouble(KEY_LON, entry.lng ?: Double.NaN)
+                        putString(KEY_NAME, e.name)
+                        putInt(KEY_SCORE, e.score)
+                        putDouble(KEY_LAT, e.lat ?: Double.NaN)
+                        putDouble(KEY_LON, e.lng ?: Double.NaN)
                     }
                 )
             }
+        }
+
+        render()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        render()
+    }
+
+    private fun render() {
+        val ctx = context ?: return
+        val rowsLocal = rows ?: return
+
+        val list = HighScoreStore.load(ctx, gameType)
+
+        for (i in 0 until 10) {
+            val entry = list.getOrNull(i)
+            rowsLocal[i].bind(entry)
         }
     }
 
@@ -70,7 +86,11 @@ class ScoresFragment : Fragment(R.layout.table_layout) {
             rootView.resources.getIdentifier("score$idx", "id", rootView.context.packageName)
         )
 
+        var current: ScoreEntry? = null
+            private set
+
         fun bind(entry: ScoreEntry?) {
+            current = entry
             nickTv.text = entry?.name ?: "---"
             scoreTv.text = (entry?.score ?: 0).toString()
         }

@@ -18,25 +18,29 @@ object HighScoreStore {
     private const val KEY_ALL = "scores_all"
     private const val KEY_BUTTONS = "scores_buttons"
     private const val KEY_SENSORS = "scores_sensors"
+
     private fun keyFor(gameType: Int?): String = when (gameType) {
         LoginActivity.GAME_TYPE_SENSORS -> KEY_SENSORS
         LoginActivity.GAME_TYPE_BUTTONS -> KEY_BUTTONS
         else -> KEY_ALL
     }
-    fun addScore(context: Context, entry: ScoreEntry, keepTop: Int = 10) {
+
+    fun addScore(context: Context, entry: ScoreEntry, keepTop: Int = 10, sync: Boolean = true) {
         val list = load(context, entry.gameType).toMutableList()
         list.add(entry)
         val sorted = list
             .sortedWith(compareByDescending<ScoreEntry> { it.score }.thenByDescending { it.ts })
             .take(keepTop)
 
-        save(context, entry.gameType, sorted)
+        save(context, entry.gameType, sorted, sync)
+
         val all = load(context, null).toMutableList()
         all.add(entry.copy(gameType = -1))
         val sortedAll = all
             .sortedWith(compareByDescending<ScoreEntry> { it.score }.thenByDescending { it.ts })
             .take(keepTop)
-        save(context, null, sortedAll)
+
+        save(context, null, sortedAll, sync)
     }
 
     fun load(context: Context, gameType: Int?): List<ScoreEntry> {
@@ -44,10 +48,12 @@ object HighScoreStore {
         val raw = sp.getString(keyFor(gameType), "[]") ?: "[]"
         val arr = JSONArray(raw)
         val out = ArrayList<ScoreEntry>(arr.length())
+
         for (i in 0 until arr.length()) {
             val o = arr.getJSONObject(i)
             val lat = if (o.has("lat") && !o.isNull("lat")) o.optDouble("lat") else null
             val lng = if (o.has("lng") && !o.isNull("lng")) o.optDouble("lng") else null
+
             out.add(
                 ScoreEntry(
                     name = o.optString("name", "---"),
@@ -62,7 +68,7 @@ object HighScoreStore {
         return out
     }
 
-    private fun save(context: Context, gameType: Int?, list: List<ScoreEntry>) {
+    private fun save(context: Context, gameType: Int?, list: List<ScoreEntry>, sync: Boolean) {
         val arr = JSONArray()
         for (e in list) {
             arr.put(
@@ -75,18 +81,21 @@ object HighScoreStore {
                     .put("lng", e.lng)
             )
         }
-        context.getSharedPreferences(PREF, Context.MODE_PRIVATE)
+
+        val editor = context.getSharedPreferences(PREF, Context.MODE_PRIVATE)
             .edit()
             .putString(keyFor(gameType), arr.toString())
-            .apply()
+
+        if (sync) editor.commit() else editor.apply()
     }
-    fun updateLocation(context: Context, gameType: Int, ts: Long, lat: Double, lng: Double) {
+
+    fun updateLocation(context: Context, gameType: Int, ts: Long, lat: Double, lng: Double, sync: Boolean = false) {
         run {
             val list = load(context, gameType).toMutableList()
             val idx = list.indexOfFirst { it.ts == ts }
             if (idx >= 0) {
                 list[idx] = list[idx].copy(lat = lat, lng = lng)
-                save(context, gameType, list)
+                save(context, gameType, list, sync)
             }
         }
         run {
@@ -94,7 +103,7 @@ object HighScoreStore {
             val idxAll = all.indexOfFirst { it.ts == ts }
             if (idxAll >= 0) {
                 all[idxAll] = all[idxAll].copy(lat = lat, lng = lng)
-                save(context, null, all)
+                save(context, null, all, sync)
             }
         }
     }

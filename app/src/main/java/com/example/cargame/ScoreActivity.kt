@@ -18,6 +18,7 @@ class ScoreActivity : AppCompatActivity() {
     private var gameType: Int = LoginActivity.GAME_TYPE_BUTTONS
     private var savedEntry: ScoreEntry? = null
     private lateinit var updater: UpdateScore
+
     private val requestLocPerms = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { perms ->
@@ -27,15 +28,18 @@ class ScoreActivity : AppCompatActivity() {
             savedEntry?.let { updater.tryFetchAndUpdateLocation(it) }
         }
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_score)
 
         tvScoreValue = findViewById(R.id.tvScoreValue)
         btnScore = findViewById(R.id.btnScore)
+
         finalScore = intent.getIntExtra(GameActivity.GAME_SCORE_KEY, 0)
         playerName = intent.getStringExtra(LoginActivity.PLAYER_NAME_KEY).orEmpty()
         gameType = intent.getIntExtra(LoginActivity.GAME_TYPE_KEY, LoginActivity.GAME_TYPE_BUTTONS)
+
         tvScoreValue.text = finalScore.toString()
         updater = UpdateScore(this, gameType)
 
@@ -46,23 +50,32 @@ class ScoreActivity : AppCompatActivity() {
                 gameType = gameType
             )
             savedEntry = entry
-            HighScoreStore.addScore(this, entry)
+
+            HighScoreStore.addScore(this, entry, sync = true)
 
             val lat = intent.getDoubleExtra("lat", Double.NaN)
             val lng = intent.getDoubleExtra("lng", Double.NaN)
+
             if (!lat.isNaN() && !lng.isNaN()) {
                 HighScoreStore.updateLocation(
                     context = this,
                     gameType = gameType,
                     ts = entry.ts,
                     lat = lat,
-                    lng = lng
+                    lng = lng,
+                    sync = true
                 )
             } else {
-                val hasFine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
-                        PackageManager.PERMISSION_GRANTED
-                val hasCoarse = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) ==
-                        PackageManager.PERMISSION_GRANTED
+                val hasFine = ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+
+                val hasCoarse = ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+
                 if (hasFine || hasCoarse) {
                     updater.tryFetchAndUpdateLocation(entry)
                 } else {
@@ -75,10 +88,9 @@ class ScoreActivity : AppCompatActivity() {
                 }
             }
         }
+
         btnScore.setOnClickListener {
-            startActivity(Intent(this, TableActivity::class.java).apply {
-                putExtra(LoginActivity.GAME_TYPE_KEY, gameType)
-            })
+            startActivity(Intent(this, TableActivity::class.java))
             finish()
         }
     }

@@ -11,6 +11,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnScore: ImageButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
